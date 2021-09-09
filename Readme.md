@@ -1,4 +1,19 @@
+## Prerequisites
+
+- git
+- docker
+- docker-compose
+- node (might need some more dependencies)
+- npm install @opentelemetry/sdk-node @opentelemetry/api
+- jaeger (support for jaegertracing/all-in-one:1.25 and older because of Go version)
+- Dynatrace
+-- Setting "Enable Go static application monitoring on every host" must be enabled
+-- Rule "Do not monitor processes if Go binary linkage equals 'static' (Rule id: #47)" must be disabled
+
 ## How to use this
+
+Make sure that Docker is running.
+
 1. Bring Kafka up:
 ```
 docker-compose up -d
@@ -9,7 +24,7 @@ docker container run -p 27018:27017 --name my_mongo -d mongo
 ```
 3. Bring producer up:
 ```
-node prodcuer.js
+node producer.js
 ```
 4. Bring consumer up:
 ```
