@@ -22,3 +22,51 @@ services:
       - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
       - zookeeper
+  # Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:0.27.0
+    command: ["--config=/conf/collector-config.yaml", "--log-level=DEBUG"]
+    volumes:
+      - ./collector-config.yaml:/conf/collector-config.yaml
+    ports:
+      - "9464:9464"
+      - "4317:4317"
+      - "55681:55681"
+    depends_on:
+      - jaeger-all-in-one
+  # Jaeger
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:1.22.0
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250"
+  # Mongo
+  mongo-db:
+    image: mongo
+    ports:
+      - "27018:27017"
+  # Node Producer
+  node-producer: 
+    image: node:latest
+    ports: 
+      - "8081:8081"
+    volumes:
+      - ./start_node.sh:/node_app/start_node.sh
+      - ./package.json:/node_app/package.json
+      - ./package-lock.json:/node_app/package-lock.json
+    comand: ["bash", "start_node.sh", "producer.js"]
+  # Node Consumer
+  node-consumer: 
+    image: node:latest
+    volumes:
+      - ./start_node.sh:/node_app/start_node.sh
+      - ./package.json:/node_app/package.json
+      - ./package-lock.json:/node_app/package-lock.json
+    comand: ["bash", "start_node.sh", "consumer-flow.js"]
+  # Traffic generator
+  traffic-generator: 
+    image: alpine:latest
+    volumes:
+      - ./curl.sh:/node_app/curl.sh
+    command: ["bash", "curl.sh"]

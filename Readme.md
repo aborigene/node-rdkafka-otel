@@ -12,35 +12,35 @@
 
 ## How to use this
 
-Make sure that Docker is running.
+To start playing around just run the command below inside the main repository folder:
 
-1. Bring Kafka up:
 ```
 docker-compose up -d
 ```
-2. Bring mongo up:
-```
-docker container run -p 27018:27017 --name my_mongo -d mongo
-```
-3. Bring producer up:
-```
-node producer.js
-```
-4. Bring consumer up:
-```
-node consumer-flow.js
-```
-5. Send an HTTP request to node:
-```
-curl "127.0.0.1:8081?message=Sample%20Message%201234"
-```
+
+This will do:
+
+1. Bring Kafka up
+2. Bring mongo up
+3. Bring producer up
+4. Bring consumer up
+5. Bring traffic generator up
+6. Bring Jaeger up
+
 
 ## How is the flow?
 curl -> Producer.js (Express) -> Producer.js (RDKafka) -> Kafka -> Consumer-flow.js (RDKafka) -> Consumer-flow.js (Mongoose) -> MongoDB
 
-Please set up a Jaeger service locally and spans will be sent automatically to that. Spans are being logged to console. When you activate OneAgent console output will stop and traces will be sent to Dynatrace.
+Traces will start to be sent to Jaeger and Consoler automatically. To test OpenTelemetry with OneAgent just do the following:
+1. Bring OneAgent up
+2. Restart the lab
+```
+docker-compose down
+docker-compose up -d
+```
+3. Traces are now sent to Dynatrace instead of Jaeger
 
 Problems to investigate:
 1. With pure Otel everything works and I can se traces stitched together on Jager or the console output.
-2. With OA setup and configurations on the cluster I can see traces only for the producer, for the consumer traces are broken and correlation is lost.
+2. With OneAget setup and configurations on the cluster I can see traces only for the producer, for the consumer traces are broken and correlation is lost.
 3. We need to set this up on customer cluster, activate the "debugNodeOpenTelemetrySensorNodeJS" flag to understand what is going on.
