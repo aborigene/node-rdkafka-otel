@@ -3,13 +3,26 @@
 - git
 - docker
 - docker-compose
-- node (might need some more dependencies)
-- npm install @opentelemetry/sdk-node @opentelemetry/api
-- jaeger (support for jaegertracing/all-in-one:1.25 and older because of Go version)
 - Dynatrace
 -- Setting "Enable Go static application monitoring on every host" must be enabled
 -- Rule "Do not monitor processes if Go binary linkage equals 'static' (Rule id: #47)" must be disabled
 
+## Extra Prerequisites
+
+All requirements are setup on containers upon start of docker-compose. In case you want to run everything locally, these are the extra requirements you should install:
+
+- node (might need some more dependencies) - Only if you want to run it locally and not through docker-compose
+- Node modules (just run ```npm install``` inside the main repository folder)
+  - @opentelemetry/sdk-node 
+  - @opentelemetry/api 
+  - @opentelemetry/exporter-jaeger 
+  - @opentelemetry/sdk-node
+  - @opentelemetry/sdk-trace-base
+  - express
+  - mongoose
+  - node-rdkafka
+  - uuid
+- jaeger (support for jaegertracing/all-in-one:1.25 and older because of Go version)
 ## How to use this
 
 To start playing around just run the command below inside the main repository folder:
@@ -31,7 +44,7 @@ This will do:
 ## How is the flow?
 curl -> Producer.js (Express) -> Producer.js (RDKafka) -> Kafka -> Consumer-flow.js (RDKafka) -> Consumer-flow.js (Mongoose) -> MongoDB
 
-Traces will start to be sent to Jaeger and Consoler automatically. To test OpenTelemetry with OneAgent just do the following:
+Traces will start to be sent to Jaeger and Console automatically. To test OpenTelemetry with OneAgent just do the following:
 1. Bring OneAgent up
 2. Restart the lab
 ```
