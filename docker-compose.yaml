@@ -49,24 +49,42 @@ services:
   # Node Producer
   node-producer: 
     image: node:latest
+    environment:
+      KAFKA_ENDPOINT: "kafka:9093"
+    depends_on:
+      - kafka
+      - mongo-db
+      - otel-collector
     ports: 
       - "8081:8081"
     volumes:
       - ./start_node.sh:/node_app/start_node.sh
       - ./package.json:/node_app/package.json
       - ./package-lock.json:/node_app/package-lock.json
-    comand: ["bash", "start_node.sh", "producer.js"]
+      - ./producer.js:/node_app/producer.js
+    command: ["bash", "/node_app/start_node.sh", "producer.js"]
   # Node Consumer
   node-consumer: 
     image: node:latest
+    environment:
+      KAFKA_ENDPOINT: "kafka:9093"
+      MONGO_URL: "mongodb://mongo-db:27018/kennel"
+    depends_on:
+      - kafka
+      - mongo-db
+      - otel-collector
     volumes:
       - ./start_node.sh:/node_app/start_node.sh
       - ./package.json:/node_app/package.json
       - ./package-lock.json:/node_app/package-lock.json
-    comand: ["bash", "start_node.sh", "consumer-flow.js"]
+      - ./consumer-flow.js:/node_app/consumer-flow.js
+      - ./model_employee.js:/node_app/model_employee.js
+    command: ["bash", "/node_app/start_node.sh", "consumer-flow.js"]
   # Traffic generator
   traffic-generator: 
     image: alpine:latest
+    depends_on:
+      - node-producer
     volumes:
       - ./curl.sh:/node_app/curl.sh
-    command: ["bash", "curl.sh"]
+    command: ["sh", "/node_app/curl.sh"]

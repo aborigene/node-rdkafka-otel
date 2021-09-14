@@ -88,7 +88,8 @@ function sendToKafka(message, parent){
 }
 var Kafka = require('node-rdkafka');
 
-var broker = 'localhost:9093';
+if (process.env.KAFKA_ENDPOINT != undefined) var broker = process.env.KAFKA_ENDPOINT;
+else var broker = 'localhost:9093';
 var producer = new Kafka.Producer({
     //'debug' : 'all',
     'metadata.broker.list': broker,

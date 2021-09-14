@@ -9,7 +9,7 @@
 
 const mongoose = require("mongoose");
 const employees = require("./model_employee");
-const customers = require("./model_customer");
+//const customers = require("./model_customer");
 
 /*const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const provider = new BasicTracerProvider();
@@ -41,22 +41,43 @@ provider.register();
 const tracer = opentelemetry.trace.getTracer('node-rdkafka-consumer');
 const propagation = opentelemetry.propagation;
 
-var uri = "mongodb://localhost:27018/kennel";
+if (process.env.MONGO_URL != undefined) var uri = process.env.MONGO_URL;
+else var uri = "mongodb://localhost:27018/kennel";
 
-mongoose.connect(uri, { useUnifiedTopology: true, useNewUrlParser: true });
+for (var i = 0; i< 5; i++){
+  try{
+    setTimeout(() => {
+      mongoose.connect(uri, { useUnifiedTopology: true, useNewUrlParser: true });
+      const connection = mongoose.connection;
 
-const connection = mongoose.connection;
-
-connection.once("open", function() {
-  console.log("MongoDB database connection established successfully");
+      connection.once("open", function() {
+      console.log("MongoDB database connection established successfully");
 });
+    }, 3000);
+  }
+  catch (error){
+    if (i == 4){
+      console.log("Mongo is still not up, waiting....");
+    }
+    else{
+      console.log("Timed out waiting for Mongo, exiting...");
+      process.exit(1);
+    }
+  }
+}
+
+
+
 
 var Kafka = require('node-rdkafka');
 const { json } = require("express");
-var broker = 'localhost:9093';
+
+if (process.env.KAFKA_ENDPOINT != undefined) var broker = process.env.KAFKA_ENDPOINT;
+else var broker = 'localhost:9093';
+
 var consumer = new Kafka.KafkaConsumer({
   //'debug': 'all',
-  'metadata.broker.list': 'localhost:9093',
+  'metadata.broker.list': broker,
   'group.id': 'node-rdkafka-consumer-flow-example',
   'enable.auto.commit': false
 });
