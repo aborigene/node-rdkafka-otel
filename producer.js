@@ -38,21 +38,25 @@ const PORT = process.env.PORT || "8081";
 const app = express();
 
 app.get("/", (req, res) => {
-  const parentSpan = tracer.startSpan('GET /');
   let message = req.query.message;
   if (message == "") message = "Default message..."
   console.log("Message: "+ message);
-  if (sendToKafka(message, parentSpan)) res.status(200).send("Messages Sent...");
+  if (sendToKafka(message)) res.status(200).send("Messages Sent...");
   else res.status(500).send("Could not send message, there is a problem with Kafka.");
-  parentSpan.end();
 });
 
-function sendToKafka(message, parent){
-      const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active(), parent);
-      const span = tracer.startSpan(topicName + " send", { kind: opentelemetry.SpanKind.PRODUCER }, ctx);
+function sendToKafka(message){
+      const attributes = {
+		"messaging.system": "kafka",
+		"messaging.destination": topicName,
+		"messaging.destination_kind": "topic",
+		"messaging.url": `kafka://${broker}/${topicName}`
+      };
+      //const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active(), parent);
+      const span = tracer.startSpan(topicName + " send", { kind: opentelemetry.SpanKind.PRODUCER, attributes });
       var carrier = Object.create(null);
       try{
-        opentelemetry.propagation.inject(ctx, carrier);
+        opentelemetry.propagation.inject(opentelemetry.trace.setSpan(opentelemetry.context.active(), span), carrier);
       }
       catch(err){
         console.log("Deu erro: "+err.message);
@@ -70,21 +74,18 @@ function sendToKafka(message, parent){
           ];
           console.log("Headers: "+ JSON.stringify(headers));
           //const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active(), parent);
-          span.setAttribute("messaging.system", "kafka");
-          span.setAttribute("messaging.destination", topicName);
-          span.setAttribute("messaging.destination_kind", "topic");
-          span.setAttribute("messaging.url", "kafka://"+broker+"/"+topicName);
-
+ 
           try{
             producer.produce(topicName, partition, value, key, Date.now(), value, headers);
             producer.flush();
-            span.end();
             return true;
           }
           catch(err){
-            span.end();
             return false;
           }
+	  finally{
+	    span.end();
+	  }
 }
 var Kafka = require('node-rdkafka');
 

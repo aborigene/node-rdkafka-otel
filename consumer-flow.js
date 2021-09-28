@@ -56,7 +56,7 @@ const { json } = require("express");
 var broker = 'localhost:9093';
 var consumer = new Kafka.KafkaConsumer({
   //'debug': 'all',
-  'metadata.broker.list': 'localhost:9093',
+  'metadata.broker.list': broker,
   'group.id': 'node-rdkafka-consumer-flow-example',
   'enable.auto.commit': false
 });
@@ -90,7 +90,12 @@ consumer.on('ready', function(arg) {
 consumer.on('data', function(m) {
   //const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active());
   var carrier = Object.create(null);
-
+  const attributes = {
+            "messaging.system": "kafka",
+            "messaging.destination": topicName,
+            "messaging.destination_kind": "topic",
+            "messaging.url": `kafka://${broker}/${topicName}`
+  };
   const context_carrier = m.headers[0]["context_carrier"];
   const context_carrier_buffer = Buffer.from(context_carrier);
   carrier = JSON.parse(context_carrier_buffer.toString());
@@ -98,27 +103,24 @@ consumer.on('data', function(m) {
 
   //var extractedContext = opentelemetry.propagation.extract(opentelemetry.context.active(), carrier);
   var extractedContext = opentelemetry.propagation.extract(opentelemetry.ROOT_CONTEXT, carrier);
-  const span = tracer.startSpan(topicName + " receive", { kind: opentelemetry.SpanKind.CONSUMER }, extractedContext);
+  const span = tracer.startSpan(topicName + " receive", { kind: opentelemetry.SpanKind.CONSUMER, attributes }, extractedContext);
   console.log(JSON.stringify(extractedContext));
-  console.log(JSON.stringify(span));
+  //console.log(JSON.stringify(span));
 
-  span.setAttribute("messaging.system", "kafka");
-  span.setAttribute("messaging.destination", topicName);
-  span.setAttribute("messaging.destination_kind", "topic");
-  span.setAttribute("messaging.url", "kafka://"+broker+"/"+topicName);
-  
-  console.log("Context Carrier: "+context_carrier);
-  console.log(JSON.stringify(m.headers));
+  console.log("Context Carrier: " + context_carrier);
+  console.log("Header Carrier: " + JSON.stringify(m.headers));
 
   carrier = JSON.parse(context_carrier);
   console.log("Carrier: "+carrier);
-  processMessage(m, span);
+  opentelemetry.context.with(opentelemetry.trace.setSpan(opentelemetry.context.active(), span), processMessage, undefined, m);
+//  processMessage(m, span);
   span.end();
 });
 
 function processMessage(m, parent){
-  const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active(), parent);
-  const span = tracer.startSpan(topicName + " process",  { kind: opentelemetry.SpanKind.CONSUMER }, ctx);
+  //const ctx = opentelemetry.trace.setSpan(opentelemetry.context.active(), parent);
+  //const span = tracer.startSpan(topicName + " process",  { kind: opentelemetry.SpanKind.CONSUMER }, ctx);
+  const span = tracer.startSpan(topicName + " process",  { kind: opentelemetry.SpanKind.CONSUMER });
   const mongoStatus = committToMongo();
   console.log(mongoStatus);
   //if (mongoStatus == true) {
